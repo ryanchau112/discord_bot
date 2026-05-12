@@ -62,6 +62,23 @@ async def get_player_name(guild: discord.Guild | None, player_id: str) -> str:
         return f"User {player_id}"
 
 
+def validate_loser(
+    loser: discord.Member | None,
+    winner: discord.Member,
+    player_ids: list[int],
+) -> str | None:
+    if loser is None:
+        return None
+
+    if loser.id not in player_ids:
+        return "Loser must be one of the current table players."
+
+    if loser.id == winner.id:
+        return "Winner and loser cannot be the same person."
+
+    return None
+
+
 @bot.event
 async def on_ready():
     init_db()
@@ -169,7 +186,7 @@ async def table(interaction: discord.Interaction):
     winner="Who won?",
     fan="How many fan? 3 to 13",
     win_type="自摸 or 食糊",
-    loser="Who discarded the winning tile? Only needed for 食糊.",
+    loser="For 食糊: discarder. For 自摸: optional 包自摸 payer.",
     notes="Optional hand description, e.g. 混一色, 對對糊",
 )
 @app_commands.choices(
@@ -224,28 +241,22 @@ async def win(
 
     loser_id = None
 
-    if win_type.value == "食糊":
-        if loser is None:
-            await interaction.response.send_message(
-                "For 食糊, please select the discarder.",
-                ephemeral=True,
-            )
-            return
+    if win_type.value == "食糊" and loser is None:
+        await interaction.response.send_message(
+            "For 食糊, please select the discarder.",
+            ephemeral=True,
+        )
+        return
 
-        if loser.id not in player_ids:
-            await interaction.response.send_message(
-                "Discarder must be one of the current table players.",
-                ephemeral=True,
-            )
-            return
+    validation_error = validate_loser(loser, winner, player_ids)
+    if validation_error:
+        await interaction.response.send_message(
+            validation_error,
+            ephemeral=True,
+        )
+        return
 
-        if loser.id == winner.id:
-            await interaction.response.send_message(
-                "Winner and discarder cannot be the same person.",
-                ephemeral=True,
-            )
-            return
-
+    if loser is not None:
         loser_id = loser.id
 
     try:
@@ -280,12 +291,14 @@ async def win(
         score_lines.append(f"{player_name}: {sign}{score_change}")
 
     notes_text = f"\nNotes: {notes}" if notes else ""
+    bao_text = "\n包自摸: Yes" if win_type.value == "自摸" and loser_id else ""
 
     await interaction.response.send_message(
         f"✅ Game #{game_id} recorded.\n\n"
         f"Winner: {winner.display_name}\n"
         f"Fan: {fan}\n"
         f"Win type: {win_type.value}"
+        f"{bao_text}"
         f"{notes_text}\n\n"
         f"Score changes:\n"
         + "\n".join(score_lines)
@@ -298,7 +311,7 @@ async def win(
     winner="Who won?",
     fan="How many fan? 3 to 13",
     win_type="自摸 or 食糊",
-    loser="Who discarded the winning tile? Only needed for 食糊.",
+    loser="For 食糊: discarder. For 自摸: optional 包自摸 payer.",
     notes="Optional hand description",
 )
 @app_commands.choices(
@@ -364,28 +377,22 @@ async def backfill_game(
 
     loser_id = None
 
-    if win_type.value == "食糊":
-        if loser is None:
-            await interaction.response.send_message(
-                "For 食糊, please select the discarder.",
-                ephemeral=True,
-            )
-            return
+    if win_type.value == "食糊" and loser is None:
+        await interaction.response.send_message(
+            "For 食糊, please select the discarder.",
+            ephemeral=True,
+        )
+        return
 
-        if loser.id not in player_ids:
-            await interaction.response.send_message(
-                "Discarder must be one of the current table players.",
-                ephemeral=True,
-            )
-            return
+    validation_error = validate_loser(loser, winner, player_ids)
+    if validation_error:
+        await interaction.response.send_message(
+            validation_error,
+            ephemeral=True,
+        )
+        return
 
-        if loser.id == winner.id:
-            await interaction.response.send_message(
-                "Winner and discarder cannot be the same person.",
-                ephemeral=True,
-            )
-            return
-
+    if loser is not None:
         loser_id = loser.id
 
     try:
@@ -420,12 +427,15 @@ async def backfill_game(
         player_name = await get_player_name(interaction.guild, player_id)
         score_lines.append(f"{player_name}: {sign}{score_change}")
 
+    bao_text = "\n包自摸: Yes" if win_type.value == "自摸" and loser_id else ""
+
     await interaction.response.send_message(
         f"✅ Previous game #{game_id} inserted.\n\n"
         f"Played at: {played_at}\n"
         f"Winner: {winner.display_name}\n"
         f"Fan: {fan}\n"
-        f"Win type: {win_type.value}\n\n"
+        f"Win type: {win_type.value}"
+        f"{bao_text}\n\n"
         f"Score changes:\n"
         + "\n".join(score_lines)
     )
@@ -470,7 +480,8 @@ async def undo_game(interaction: discord.Interaction):
     loser_text = ""
     if loser_id:
         loser_name = await get_player_name(interaction.guild, loser_id)
-        loser_text = f"\nDiscarder: {loser_name}"
+        loser_label = "包自摸 payer" if win_type == "自摸" else "Discarder"
+        loser_text = f"\n{loser_label}: {loser_name}"
 
     notes_text = f"\nNotes: {notes}" if notes else ""
 
