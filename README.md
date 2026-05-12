@@ -16,7 +16,7 @@ A Discord bot for recording Hong Kong Mahjong games, calculating scores, and sho
 
 ## Scoring rules
 
-| Fan | Discard win score | Self-draw score per losing player |
+| Fan | Discard win score | Self-draw score total |
 |---:|---:|---:|
 | 3 | 4 | 6 |
 | 4 | 8 | 12 |
@@ -30,9 +30,17 @@ A Discord bot for recording Hong Kong Mahjong games, calculating scores, and sho
 | 12 | 128 | 192 |
 | 13 | 192 | 288 |
 
-For `食糊`, only the discarder loses the score and the winner gains it.
+For `食糊`, only the discarder loses the discard win score and the winner gains that score.
 
-For `自摸`, the three other players each lose the self-draw score and the winner gains the total from all three.
+For `自摸`, the self-draw score is the **total** score gained by the winner. The three other players share that loss equally.
+
+Example:
+
+```text
+5 fan 自摸 = 18 total
+Winner: +18
+Each other player: -6
+```
 
 ## Setup
 
