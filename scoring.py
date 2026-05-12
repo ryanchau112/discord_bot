@@ -43,15 +43,29 @@ def calculate_score_changes(
 
     elif win_type == "自摸":
         self_draw_total = FAN_SCORE_TABLE[fan]["self_draw_total"]
-        loss_per_player = self_draw_total // 3
 
-        for player_id in player_ids:
-            if player_id == winner_id:
-                score_change = self_draw_total
-            else:
-                score_change = -loss_per_player
+        # Normal self-draw: the three other players share the total loss equally.
+        # Bao self-draw 包自摸: if loser_id is supplied, that player pays the full total.
+        if loser_id is not None:
+            for player_id in player_ids:
+                if player_id == winner_id:
+                    score_change = self_draw_total
+                elif player_id == loser_id:
+                    score_change = -self_draw_total
+                else:
+                    score_change = 0
 
-            score_changes.append((str(player_id), score_change))
+                score_changes.append((str(player_id), score_change))
+        else:
+            loss_per_player = self_draw_total // 3
+
+            for player_id in player_ids:
+                if player_id == winner_id:
+                    score_change = self_draw_total
+                else:
+                    score_change = -loss_per_player
+
+                score_changes.append((str(player_id), score_change))
 
     else:
         raise ValueError("Win type must be 自摸 or 食糊.")
