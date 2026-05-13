@@ -583,7 +583,7 @@ async def leaderboard(
             f"{sign}{total_score or 0} net score | "
             f"{wins or 0} wins | "
             f"自摸 {self_draw_wins or 0} | "
-            f"放銃 {discard_losses or 0} | "
+            f"出銃 {discard_losses or 0} | "
             f"{games_played} games | "
             f"{win_rate or 0}% win rate"
         )
