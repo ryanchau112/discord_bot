@@ -575,6 +575,8 @@ async def leaderboard(
         )
         return
 
+    await interaction.response.defer()
+
     if month is None:
         month = datetime.now(timezone.utc).strftime("%Y-%m")
 
@@ -584,7 +586,7 @@ async def leaderboard(
     )
 
     if not rows:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"No games recorded for {month}."
         )
         return
@@ -627,7 +629,7 @@ async def leaderboard(
             f"{win_rate_text:>6}"
         )
 
-    await interaction.response.send_message(
+    await interaction.followup.send(
         "```text\n" + "\n".join(lines) + "\n```"
     )
 
