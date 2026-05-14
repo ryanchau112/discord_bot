@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+from wcwidth import wcswidth
 
 from database import (
     init_db,
@@ -32,6 +33,33 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 NAME_CACHE = {}
 NAME_CACHE_SECONDS = 600
+
+
+def display_width(text: str) -> int:
+    width = wcswidth(text)
+    return width if width >= 0 else len(text)
+
+
+def trim_display_width(text: str, max_width: int) -> str:
+    result = ""
+    current_width = 0
+
+    for char in text:
+        char_width = display_width(char)
+
+        if current_width + char_width > max_width - 1:
+            return result + "…"
+
+        result += char
+        current_width += char_width
+
+    return result
+
+
+def pad_display(text: str, width: int) -> str:
+    current_width = display_width(text)
+    padding = max(width - current_width, 0)
+    return text + (" " * padding)
 
 
 async def get_player_name(guild: discord.Guild | None, player_id: str) -> str:
@@ -582,17 +610,15 @@ async def leaderboard(
 
         sign = "+" if total_score and total_score > 0 else ""
         player_name = await get_player_name(interaction.guild, player_id)
-        display_name = player_name
-
-        if len(display_name) > 16:
-            display_name = display_name[:15] + "…"
+        display_name = trim_display_width(player_name, 18)
+        display_name = pad_display(display_name, 18)
 
         score_text = f"{sign}{total_score or 0}"
         win_rate_text = f"{win_rate or 0:.1f}%"
 
         lines.append(
             f"{index:<2} "
-            f"{display_name:<18} "
+            f"{display_name} "
             f"{score_text:>6} "
             f"{wins or 0:>5} "
             f"{self_draw_wins or 0:>4} "
