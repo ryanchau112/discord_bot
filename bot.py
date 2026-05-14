@@ -561,7 +561,12 @@ async def leaderboard(
         )
         return
 
-    lines = [f"🏆 Mahjong Leaderboard - {month}\n"]
+    lines = [
+        f"Mahjong Leaderboard - {month}",
+        "",
+        "#  Player              Score  Wins  自摸  出銃  Games   Win%",
+        "-- ------------------ ------ ----- ---- ---- ------ ------",
+    ]
 
     for index, row in enumerate(rows, start=1):
         (
@@ -577,18 +582,28 @@ async def leaderboard(
 
         sign = "+" if total_score and total_score > 0 else ""
         player_name = await get_player_name(interaction.guild, player_id)
+        display_name = player_name
+
+        if len(display_name) > 16:
+            display_name = display_name[:15] + "…"
+
+        score_text = f"{sign}{total_score or 0}"
+        win_rate_text = f"{win_rate or 0:.1f}%"
 
         lines.append(
-            f"{index}. {player_name}: "
-            f"{sign}{total_score or 0} net score | "
-            f"{wins or 0} wins | "
-            f"自摸 {self_draw_wins or 0} | "
-            f"出銃 {discard_losses or 0} | "
-            f"{games_played} games | "
-            f"{win_rate or 0}% win rate"
+            f"{index:<2} "
+            f"{display_name:<18} "
+            f"{score_text:>6} "
+            f"{wins or 0:>5} "
+            f"{self_draw_wins or 0:>4} "
+            f"{discard_losses or 0:>4} "
+            f"{games_played:>6} "
+            f"{win_rate_text:>6}"
         )
 
-    await interaction.response.send_message("\n".join(lines))
+    await interaction.response.send_message(
+        "```text\n" + "\n".join(lines) + "\n```"
+    )
 
 
 @bot.tree.command(name="end_table", description="End the active Mahjong table")
