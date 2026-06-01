@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 import discord
 from discord import app_commands
@@ -27,6 +28,7 @@ from scoring import calculate_score_changes, FAN_SCORE_TABLE
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+UK_TIMEZONE = ZoneInfo("Europe/London")
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -373,7 +375,7 @@ async def backfill_game(
 
     try:
         parsed_date = datetime.strptime(played_at, "%Y-%m-%d %H:%M")
-        played_at_value = parsed_date.isoformat()
+        played_at_value = parsed_date.replace(tzinfo=UK_TIMEZONE).isoformat()
     except ValueError:
         await interaction.response.send_message(
             "Invalid date format. Use `YYYY-MM-DD HH:MM`, e.g. `2026-05-01 20:15`.",
@@ -578,7 +580,7 @@ async def leaderboard(
     await interaction.response.defer()
 
     if month is None:
-        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        month = datetime.now(UK_TIMEZONE).strftime("%Y-%m")
 
     rows = get_monthly_leaderboard(
         guild_id=interaction.guild_id,
