@@ -1,11 +1,13 @@
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 DB_PATH = "mahjong.db"
+UK_TIMEZONE = ZoneInfo("Europe/London")
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UK_TIMEZONE).isoformat()
 
 
 def get_conn():
